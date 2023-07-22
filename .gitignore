@@ -1,0 +1,7 @@
+.venv*/
+todo/
+build/
+egg-info/
+__pycache__/
+quotes_collector/quotes_collector/__pycache__/
+quotes_collector/quotes_collector/spiders/__pycache__/
