@@ -8,8 +8,8 @@ from scrapy.utils.project import get_project_settings
 from scrapy.signalmanager import dispatcher
 
 
-class AuthorsSpider(scrapy.Spider):
-    name = 'authors'
+class QuotesAuthorsSpider(scrapy.Spider):
+    name = 'quotes_authors'
     allowed_domains = ['quotes.toscrape.com']
     start_urls = ['http://quotes.toscrape.com']
 
@@ -17,11 +17,19 @@ class AuthorsSpider(scrapy.Spider):
 
     def parse(self, response):
         for quote in response.xpath("/html//div[@class='quote']"):
+
+            yield {
+                "tags": quote.xpath("div[@class='tags']/a/text()").extract(),
+                "author": quote.xpath("span/small/text()").get(),
+                "quote": quote.xpath("span[@class='text']/text()").get()
+            }
+
             author = quote.xpath("span/small/text()").get()
             author_link = quote.xpath("span/a/@href").get()
             if author_link in self.author_map.keys():
                 continue
             self.author_map[author] = author_link
+
 
         next_link = response.xpath("//li[@class='next']/a/@href").get()
         if next_link:
@@ -48,23 +56,6 @@ class AuthorsSpider(scrapy.Spider):
         }
 
 
-class QuotesSpider(scrapy.Spider):
-    name = 'quotes'
-    allowed_domains = ['quotes.toscrape.com']
-    start_urls = ['http://quotes.toscrape.com']
-
-    def parse(self, response):
-        for quote in response.xpath("/html//div[@class='quote']"):
-            yield {
-                "tags": quote.xpath("div[@class='tags']/a/text()").extract(),
-                "author": quote.xpath("span/small/text()").get(),
-                "quote": quote.xpath("span[@class='text']/text()").get()
-            }
-        next_link = response.xpath("//li[@class='next']/a/@href").get()
-        if next_link:
-            yield scrapy.Request(url=self.start_urls[0] + next_link)
-
-
 def main(file_authors, file_quotes):
     author_list = []
     quote_list = []
@@ -77,8 +68,7 @@ def main(file_authors, file_quotes):
 
     dispatcher.connect(crawler_results, signal=scrapy.signals.item_scraped)
     process = CrawlerProcess(get_project_settings())
-    process.crawl(AuthorsSpider)
-    process.crawl(QuotesSpider)
+    process.crawl(QuotesAuthorsSpider)
     process.start() # the script will block here until the crawling is finished
 
     try:
